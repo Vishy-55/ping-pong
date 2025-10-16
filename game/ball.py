@@ -1,5 +1,14 @@
 import pygame
 import random
+import os
+
+# Initialize mixer once when this file loads
+pygame.mixer.init()
+
+# Load sound files
+HIT_SOUND = pygame.mixer.Sound(os.path.join("assets", "hit.wav"))
+WALL_SOUND = pygame.mixer.Sound(os.path.join("assets", "wall.wav"))
+SCORE_SOUND = pygame.mixer.Sound(os.path.join("assets", "score.wav"))
 
 class Ball:
     def __init__(self, x, y, width, height, screen_width, screen_height):
@@ -18,18 +27,34 @@ class Ball:
         self.x += self.velocity_x
         self.y += self.velocity_y
 
+        # Bounce off top/bottom walls
         if self.y <= 0 or self.y + self.height >= self.screen_height:
             self.velocity_y *= -1
+            WALL_SOUND.play()  # Play wall bounce sound
 
     def check_collision(self, player, ai):
-        if self.rect().colliderect(player.rect()) or self.rect().colliderect(ai.rect()):
+        ball_rect = self.rect()
+        player_rect = player.rect()
+        ai_rect = ai.rect()
+
+        # Left paddle collision
+        if ball_rect.colliderect(player_rect) and self.velocity_x < 0:
+            self.x = player_rect.right
             self.velocity_x *= -1
+            HIT_SOUND.play()  # Paddle hit sound
+
+        # Right paddle collision
+        if ball_rect.colliderect(ai_rect) and self.velocity_x > 0:
+            self.x = ai_rect.left - self.width
+            self.velocity_x *= -1
+            HIT_SOUND.play()  # Paddle hit sound
 
     def reset(self):
         self.x = self.original_x
         self.y = self.original_y
         self.velocity_x *= -1
         self.velocity_y = random.choice([-3, 3])
+        SCORE_SOUND.play()  # Play scoring sound
 
     def rect(self):
         return pygame.Rect(self.x, self.y, self.width, self.height)
